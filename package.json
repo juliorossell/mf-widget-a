@@ -1,0 +1,75 @@
+{
+  "name": "mfe-widgets-demo",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "build:shell:prod": "ng build shell --configuration=production --base-href=/ && copy \"projects\\shell\\public\\federation.manifest.netlify.json\" \"dist\\shell\\browser\\federation.manifest.json\"",
+    "build:mfe-widget-a:prod": "ng build mfe-widget-a --configuration=production",
+    "build:mfe-widget-b:prod": "ng build mfe-widget-b --configuration=production",
+    "build:all:prod": "npm run build:shell:prod && npm run build:mfe-widget-a:prod && npm run build:mfe-widget-b:prod",
+    "serve:shell": "ng serve shell --port 4200 --proxy-config proxy.conf.json",
+    "serve:mfe-widget-a": "ng serve mfe-widget-a --port 4201 --proxy-config proxy.conf.json",
+    "serve:mfe-widget-b": "ng serve mfe-widget-b --port 4202 --proxy-config proxy.conf.json",
+    "serve:all": "concurrently \"npm run serve:shell\" \"npm run serve:mfe-widget-a\" \"npm run serve:mfe-widget-b\"",
+    "deploy:netlify:shell": "npm run build:shell:prod && npx netlify deploy --prod --dir=dist/shell/browser",
+    "deploy:netlify:widget-a": "npm run build:mfe-widget-a:prod && npx netlify deploy --prod --dir=dist/mfe-widget-a/browser",
+    "deploy:netlify:widget-b": "npm run build:mfe-widget-b:prod && npx netlify deploy --prod --dir=dist/mfe-widget-b/browser",
+    "deploy:vercel:shell": "npm run build:shell:prod && npx vercel --prod dist/shell",
+    "deploy:surge:shell": "npm run build:shell:prod && npx surge dist/shell",
+    "test:local:federation": "concurrently \"npm run serve:shell\" \"npm run serve:mfe-widget-a\" \"npm run serve:mfe-widget-b\" \"npx http-server -p 8080 -c-1\"",
+    "migrate:multirepo": "pwsh scripts/migrate-to-multirepo-cdn.ps1",
+    "build:all:cdn": "npm run build:shell:prod && npm run build:mfe-widget-a:prod && npm run build:mfe-widget-b:prod",
+    "deploy:azure:cdn": "az pipelines run --name MultiRepo-CDN-Pipeline",
+    "validate:cdn": "node scripts/validate-cdn-endpoints.js"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "packageManager": "npm@10.9.0",
+  "dependencies": {
+    "@angular-architects/native-federation-runtime": "^0.9.1",
+    "@angular/animations": "^21.0.0",
+    "@angular/cdk": "^21.1.0",
+    "@angular/common": "^21.0.0",
+    "@angular/compiler": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "@angular/forms": "^21.0.0",
+    "@angular/platform-browser": "^21.0.0",
+    "@angular/router": "^21.0.0",
+    "@fractalia-apps/components": "file:fractalia-apps-components-2.4.1.tgz",
+    "@fractalia/components": "file:fractalia-components-2.4.59.tgz",
+    "@fractalia/itcss": "2.0.14",
+    "@softarc/native-federation-node": "^3.3.4",
+    "chart.js": "^4.5.1",
+    "cropperjs": "^2.1.0",
+    "es-module-shims": "^2.7.0",
+    "ng2-charts": "^8.0.0",
+    "oxc-parser": "^0.108.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular-architects/native-federation": "^21.0.4",
+    "@angular-devkit/build-angular": "^21.0.4",
+    "@angular/build": "^21.0.4",
+    "@angular/cli": "^21.0.4",
+    "@angular/compiler-cli": "^21.0.0",
+    "jsdom": "^27.1.0",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
+  }
+}

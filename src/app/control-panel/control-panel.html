@@ -1,0 +1,26 @@
+<div class="control-panel-container">
+  <h2>Control Panel - Shared Fractalia Components</h2>
+
+  <!-- Ejemplo de uso del FraButton compartido -->
+  <div class="fractalia-components-demo">
+    <h3>Fractalia Components Demo</h3>
+
+    <!-- FraButton example -->
+    <fra-button
+      [label]="'label de texto'"
+      (click)="simulateLoadControlPanelAPI()">
+    </fra-button>
+
+    <p *ngIf="isloading">🔄 Loading data with JWT interceptor...</p>
+  </div>
+
+  <div class="api-test-section">
+    <h3>JWT Interceptor Test</h3>
+    <p>Este componente demuestra:</p>
+    <ul>
+      <li>✅ Componentes Fractalia compartidos (fra-button)</li>
+      <li>✅ JWT Interceptor funcionando automáticamente</li>
+      <li>✅ Configuración compartida entre microfrontends</li>
+    </ul>
+  </div>
+</div>

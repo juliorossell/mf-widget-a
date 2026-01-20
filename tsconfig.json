@@ -1,0 +1,53 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/mf-bus": ["projects/shared/mf-bus/mf-bus.ts"],
+      "@shared/mf-events": ["projects/shared/mf-bus/events.ts"],
+      "@shared/mocks/*": ["projects/shared/mocks/*"],
+      "@shared/environments/*": ["projects/shared/environments/*"],
+      "@shared/mf-bus/*": ["projects/shared/*"]
+    }
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/shell/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/shell/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/mfe-widget-a/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/mfe-widget-a/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/mfe-widget-b/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/mfe-widget-b/tsconfig.spec.json"
+    }
+  ]
+}
