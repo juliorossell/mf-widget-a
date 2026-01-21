@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:multirepo": "ng build --configuration=production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "build:shell:prod": "ng build shell --configuration=production --base-href=/ && copy \"projects\\shell\\public\\federation.manifest.netlify.json\" \"dist\\shell\\browser\\federation.manifest.json\"",
