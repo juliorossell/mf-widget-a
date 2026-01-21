@@ -20,8 +20,14 @@ jobs:
         node-version: '18.17.0'
         cache: 'npm'
 
+    - name: Setup npm token
+      run: |
+        echo "//registry.npmjs.org/:_authToken=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" > ~/.npmrc
+        echo "legacy-peer-deps=true" >> ~/.npmrc
+        echo "auto-install-peers=true" >> ~/.npmrc
+
     - name: Install dependencies
-      run: npm ci --legacy-peer-deps
+      run: npm install --legacy-peer-deps
 
     - name: Use production federation config
       run: cp federation.config.multirepo.js federation.config.js
