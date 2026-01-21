@@ -1,0 +1,43 @@
+trigger:
+  branches:
+    include:
+    - main
+    - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  nodeVersion: '18.17.0'
+
+steps:
+- task: NodeTool@0
+  displayName: 'Use Node.js $(nodeVersion)'
+  inputs:
+    versionSpec: '$(nodeVersion)'
+
+- script: |
+    npm ci
+  displayName: 'Install dependencies'
+
+- script: |
+    cp federation.config.multirepo.js federation.config.js
+  displayName: 'Use production federation config'
+
+- script: |
+    npm run build:multirepo
+  displayName: 'Build project'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifacts'
+  inputs:
+    PathtoPublish: 'dist/mf-widget-a/browser'
+    ArtifactName: 'widget-a-build'
+
+- task: netlify-cli-deploy@1
+  displayName: 'Deploy to Netlify'
+  inputs:
+    netlifyAuthToken: '$(NETLIFY_AUTH_TOKEN)'
+    siteName: 'widget-a-multirepo'
+    buildDirectory: 'dist/mf-widget-a/browser'
+    productionDeploy: true

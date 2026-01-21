@@ -5,7 +5,7 @@ module.exports = withNativeFederation({
 
   // Import shared services from shell when in standalone mode
   remotes: {
-    shell: 'https://fractalia-shell.netlify.app/remoteEntry.json'
+    shell: 'https://shell-multirepo.netlify.app/remoteEntry.json'
   },
 
   exposes: {
@@ -58,15 +58,9 @@ module.exports = withNativeFederation({
     'rxjs/webSocket',
     // Fractalia dependencies to skip (pero no CDK que lo estamos compartiendo)
     'cropperjs',
-    'ng2-charts',
-    'chart.js'
-  ],
-  sharedMappings: [
-    '@angular/core',
-    '@angular/common',
-    '@angular/common/http',
-    '@angular/platform-browser',
-    '@angular/router',
-    'rxjs'
-  ],
+    // 'chart.js',  // Dejamos chart.js porque lo usa widget-a
+    'primeng',
+    '@fractalia/itcss', // Lo compartimos en lugar de excluir si se va a usar en todos los microfrontends
+    'leaflet'
+  ]
 });

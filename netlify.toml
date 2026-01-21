@@ -1,6 +1,6 @@
 [build]
   command = "npm run build:multirepo"
-  publish = "dist/browser"
+  publish = "dist/mf-widget-a/browser"
 
 [build.environment]
   NODE_VERSION = "18.17.0"
