@@ -17,7 +17,7 @@ steps:
     versionSpec: '$(nodeVersion)'
 
 - script: |
-    npm ci
+    npm ci --legacy-peer-deps
   displayName: 'Install dependencies'
 
 - script: |
