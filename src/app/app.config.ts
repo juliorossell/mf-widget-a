@@ -1,16 +1,17 @@
+import { CoreLayoutService } from './../../shared/core/core-layout/core-layout.service';
+import { coreLayoutInitializerProvider } from './../../shared/core/core-layout/core-layout.initializer';
+import { provideJwtInterceptor } from './../../shared/interceptors';
+
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, Provider } from '@angular/core';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
-// Import shared JWT interceptor
-import { provideJwtInterceptor } from '../../../shared/interceptors';
 
 // Import CoreLayout service and initializer for standalone mode
-import { CoreLayoutService, coreLayoutInitializerProvider } from '../../../shared/core/core-layout';
 
 // Function to check if running in standalone mode
 function isStandalone(): boolean {
   // Check if we're running as a standalone app (not loaded as a microfrontend)
-  return !window.location.pathname.includes('/mf/') && 
+  return !window.location.pathname.includes('/mf/') &&
          window.location.port === '4201'; // Widget-A port
 }
 
@@ -23,7 +24,7 @@ function getConditionalProviders(): Provider[] {
       coreLayoutInitializerProvider
     ];
   }
-  
+
   console.log('Widget A running as microfrontend - skipping CoreLayout initialization');
   return [];
 }

@@ -1,7 +1,7 @@
 import { mockInitialElements } from './../../mocks/initial-elements-mock';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, Inject, Optional } from '@angular/core';
-import { sharedEnvironment } from '@shared/environments/environment.shared';
+import { sharedEnvironment } from '../../environments/environment.shared';
 import { Observable, tap } from 'rxjs';
 import { ObservableUtils } from '../utils/ObservablesUtils';
 

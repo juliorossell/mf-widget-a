@@ -6,15 +6,15 @@
 	},
 	"newProjectRoot": "projects",
 	"projects": {
-		"shell": {
+		"mf-widget-a": {
 			"projectType": "application",
 			"schematics": {
 				"@schematics/angular:component": {
 					"style": "scss"
 				}
 			},
-			"root": "projects/shell",
-			"sourceRoot": "projects/shell/src",
+			"root": "",
+			"sourceRoot": "src",
 			"prefix": "app",
 			"architect": {
 				"build": {
@@ -22,10 +22,10 @@
 					"options": {},
 					"configurations": {
 						"production": {
-							"target": "shell:esbuild:production"
+							"target": "mf-widget-a:esbuild:production"
 						},
 						"development": {
-							"target": "shell:esbuild:development",
+							"target": "mf-widget-a:esbuild:development",
 							"dev": true
 						}
 					},
@@ -34,7 +34,7 @@
 				"serve": {
 					"builder": "@angular-architects/native-federation:build",
 					"options": {
-						"target": "shell:serve-original:development",
+						"target": "mf-widget-a:serve-original:development",
 						"rebuildDelay": 500,
 						"dev": true,
 						"cacheExternalArtifacts": false,
@@ -47,19 +47,18 @@
 				"esbuild": {
 					"builder": "@angular/build:application",
 					"options": {
-						"outputPath": "dist/shell",
-						"browser": "projects/shell/src/main.ts",
-						"tsConfig": "projects/shell/tsconfig.app.json",
+						"outputPath": "dist/mf-widget-a",
+						"browser": "src/main.ts",
+						"tsConfig": "tsconfig.app.json",
 						"inlineStyleLanguage": "scss",
 						"assets": [
 							{
 								"glob": "**/*",
-								"input": "projects/shell/public"
+								"input": "public"
 							}
 						],
 						"styles": [
-							"projects/shell/src/styles.scss",
-              "node_modules/@fractalia/itcss/dist/fractalia-itcss.css"
+							"src/styles.scss"
 						],
 						"polyfills": [
 							"es-module-shims"
@@ -93,108 +92,10 @@
 					"builder": "@angular/build:dev-server",
 					"configurations": {
 						"production": {
-							"buildTarget": "shell:esbuild:production"
+							"buildTarget": "mf-widget-a:esbuild:production"
 						},
 						"development": {
-							"buildTarget": "shell:esbuild:development"
-						}
-					},
-					"defaultConfiguration": "development",
-					"options": {
-						"port": 4200
-					}
-				}
-			}
-		},
-		"mfe-widget-a": {
-			"projectType": "application",
-			"schematics": {
-				"@schematics/angular:component": {
-					"style": "scss"
-				}
-			},
-			"root": "projects/mfe-widget-a",
-			"sourceRoot": "projects/mfe-widget-a/src",
-			"prefix": "app",
-			"architect": {
-				"build": {
-					"builder": "@angular-architects/native-federation:build",
-					"options": {},
-					"configurations": {
-						"production": {
-							"target": "mfe-widget-a:esbuild:production"
-						},
-						"development": {
-							"target": "mfe-widget-a:esbuild:development",
-							"dev": true
-						}
-					},
-					"defaultConfiguration": "production"
-				},
-				"serve": {
-					"builder": "@angular-architects/native-federation:build",
-					"options": {
-						"target": "mfe-widget-a:serve-original:development",
-						"rebuildDelay": 500,
-						"dev": true,
-						"cacheExternalArtifacts": false,
-						"port": 0
-					}
-				},
-				"test": {
-					"builder": "@angular/build:unit-test"
-				},
-				"esbuild": {
-					"builder": "@angular/build:application",
-					"options": {
-						"browser": "projects/mfe-widget-a/src/main.ts",
-						"tsConfig": "projects/mfe-widget-a/tsconfig.app.json",
-						"inlineStyleLanguage": "scss",
-						"assets": [
-							{
-								"glob": "**/*",
-								"input": "projects/mfe-widget-a/public"
-							}
-						],
-						"styles": [
-							"projects/mfe-widget-a/src/styles.scss"
-						],
-						"polyfills": [
-							"es-module-shims"
-						]
-					},
-					"configurations": {
-						"production": {
-							"budgets": [
-								{
-									"type": "initial",
-									"maximumWarning": "500kB",
-									"maximumError": "1MB"
-								},
-								{
-									"type": "anyComponentStyle",
-									"maximumWarning": "4kB",
-									"maximumError": "8kB"
-								}
-							],
-							"outputHashing": "all"
-						},
-						"development": {
-							"optimization": false,
-							"extractLicenses": false,
-							"sourceMap": true
-						}
-					},
-					"defaultConfiguration": "production"
-				},
-				"serve-original": {
-					"builder": "@angular/build:dev-server",
-					"configurations": {
-						"production": {
-							"buildTarget": "mfe-widget-a:esbuild:production"
-						},
-						"development": {
-							"buildTarget": "mfe-widget-a:esbuild:development"
+							"buildTarget": "mf-widget-a:esbuild:development"
 						}
 					},
 					"defaultConfiguration": "development",
@@ -209,104 +110,7 @@
 					}
 				}
 			}
-		},
-		"mfe-widget-b": {
-			"projectType": "application",
-			"schematics": {
-				"@schematics/angular:component": {
-					"style": "scss"
-				}
-			},
-			"root": "projects/mfe-widget-b",
-			"sourceRoot": "projects/mfe-widget-b/src",
-			"prefix": "app",
-			"architect": {
-				"build": {
-					"builder": "@angular-architects/native-federation:build",
-					"options": {},
-					"configurations": {
-						"production": {
-							"target": "mfe-widget-b:esbuild:production"
-						},
-						"development": {
-							"target": "mfe-widget-b:esbuild:development",
-							"dev": true
-						}
-					},
-					"defaultConfiguration": "production"
-				},
-				"serve": {
-					"builder": "@angular-architects/native-federation:build",
-					"options": {
-						"target": "mfe-widget-b:serve-original:development",
-						"rebuildDelay": 500,
-						"dev": true,
-						"cacheExternalArtifacts": false,
-						"port": 0
-					}
-				},
-				"test": {
-					"builder": "@angular/build:unit-test"
-				},
-				"esbuild": {
-					"builder": "@angular/build:application",
-					"options": {
-						"browser": "projects/mfe-widget-b/src/main.ts",
-						"tsConfig": "projects/mfe-widget-b/tsconfig.app.json",
-						"inlineStyleLanguage": "scss",
-						"assets": [
-							{
-								"glob": "**/*",
-								"input": "projects/mfe-widget-b/public"
-							}
-						],
-						"styles": [
-							"projects/mfe-widget-b/src/styles.scss"
-						],
-						"polyfills": [
-							"es-module-shims"
-						]
-					},
-					"configurations": {
-						"production": {
-							"budgets": [
-								{
-									"type": "initial",
-									"maximumWarning": "500kB",
-									"maximumError": "1MB"
-								},
-								{
-									"type": "anyComponentStyle",
-									"maximumWarning": "4kB",
-									"maximumError": "8kB"
-								}
-							],
-							"outputHashing": "all"
-						},
-						"development": {
-							"optimization": false,
-							"extractLicenses": false,
-							"sourceMap": true
-						}
-					},
-					"defaultConfiguration": "production"
-				},
-				"serve-original": {
-					"builder": "@angular/build:dev-server",
-					"configurations": {
-						"production": {
-							"buildTarget": "mfe-widget-b:esbuild:production"
-						},
-						"development": {
-							"buildTarget": "mfe-widget-b:esbuild:development"
-						}
-					},
-					"defaultConfiguration": "development",
-					"options": {
-						"port": 4202
-					}
-				}
-			}
 		}
-	}
+	},
+	"defaultProject": "mf-widget-a"
 }

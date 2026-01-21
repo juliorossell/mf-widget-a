@@ -8,7 +8,7 @@ import { BmsMicroService } from '../../services/bms-micro-service';
 import { FraButtonComponent } from '@fractalia/components';
 
 // Import JWT interceptor
-import { provideJwtInterceptor } from '../../../../shared/interceptors';
+import { provideJwtInterceptor } from './../../../shared/interceptors';
 
 @Component({
   selector: 'app-control-panel',

@@ -1,18 +1,18 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { onTopic, publish } from '@shared/mf-bus';
+import { onTopic, publish } from '../../shared/mf-bus/mf-bus';
 import {
   MicrofrontsState,
   MicrofrontsStatePayload,
   Topics,
   UiToastPayload,
-} from '@shared/mf-events';
-import { userMock } from '../../../shared/mocks/auth-mock';
+} from '../../shared/mf-bus/events';
+import { userMock } from '../../shared/mocks/auth-mock';
 
 // Import dynamic render components
-import { RenderComponentDirective } from '../../../shared/core/dynamic-render/render-component.directive';
-import { DynamicRenderComponentService } from '../../../shared/core/dynamic-render/dynamic-render-component.service';
+import { RenderComponentDirective } from '../../shared/core/dynamic-render/render-component.directive';
+import { DynamicRenderComponentService } from '../../shared/core/dynamic-render/dynamic-render-component.service';
 import { PageComplete } from './page-complete/page-complete';
 import { HomeCard } from './home-card/home-card';
 import { ControlPanel } from './control-panel/control-panel';
