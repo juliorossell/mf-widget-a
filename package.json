@@ -53,7 +53,7 @@
     "@angular/router": "^21.0.0",
     "@fractalia-apps/components": "file:fractalia-apps-components-2.4.1.tgz",
     "@fractalia/components": "file:fractalia-components-2.4.59.tgz",
-    "@fractalia/itcss": "2.0.14",
+    "@fractalia/itcss": "file:fractalia-itcss-2.0.14.tgz",
     "@softarc/native-federation-node": "^3.3.4",
     "chart.js": "^4.5.1",
     "cropperjs": "^2.1.0",

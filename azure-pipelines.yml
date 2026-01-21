@@ -17,6 +17,10 @@ steps:
     versionSpec: '$(nodeVersion)'
 
 - script: |
+    echo "//registry.npmjs.org/:_authToken=$(NPM_TOKEN)" >> .npmrc
+  displayName: 'Configure npm authentication'
+
+- script: |
     npm ci --legacy-peer-deps
   displayName: 'Install dependencies'
 
