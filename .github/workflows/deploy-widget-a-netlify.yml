@@ -91,7 +91,7 @@ jobs:
 
       - name: 🔍 Show build script (debug)
         shell: bash
-        run: node -p "require('./package.json').scripts['build:mfe-widget-a:prod'] || require('./package.json').scripts['build:multirepo'] || 'No build script found'"
+        run: node -p "require('./package.json').scripts['build:mfa-widget-a:prod'] || require('./package.json').scripts['build:multirepo'] || 'No build script found'"
 
       - name: 🔄 Use production federation config
         shell: bash
@@ -110,8 +110,8 @@ jobs:
           node -v
           npx ng version
           # Try different build script names
-          if npm run build:mfe-widget-a:prod; then
-            echo "✅ Widget-A built successfully with build:mfe-widget-a:prod"
+          if npm run build:mfa-widget-a:prod; then
+            echo "✅ Widget-A built successfully with build:mfa-widget-a:prod"
           elif npm run build:multirepo; then
             echo "✅ Widget-A built successfully with build:multirepo"
           else

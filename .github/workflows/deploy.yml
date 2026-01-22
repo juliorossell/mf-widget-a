@@ -75,6 +75,11 @@ jobs:
           echo "🔧 Rebuilding native modules..."
           npm rebuild
           echo "✅ Installation completed"
+          
+          echo "🔍 Verifying key dependencies:"
+          npm list @angular/core || echo "⚠️ @angular/core not found"
+          npm list @angular/common || echo "⚠️ @angular/common not found"
+          npm list rxjs || echo "⚠️ rxjs not found"
 
       - name: 🔄 Use production federation config
         shell: bash
@@ -89,18 +94,32 @@ jobs:
       - name: 🏗️ Build project
         shell: bash
         run: |
+          echo "🔍 Current working directory:"
+          pwd
+          
+          echo "🔍 Available files in root:"
+          ls -la
+          
           echo "🔍 Available scripts:"
           npm run 2>&1 | grep -E "build:" || true
-
+          
+          echo "🔍 Checking TypeScript config files:"
+          ls -la *.json || echo "No .json files found in root"
+          
+          echo "🔍 Node modules check:"
+          ls -la node_modules/@angular/ | head -10 || echo "Angular modules not found"
+          
+          echo "🏗️ Starting build process..."
           if npm run build:multirepo; then
             echo "✅ Widget-A built successfully with build:multirepo"
-          elif npm run build:mfe-widget-a:prod; then
-            echo "✅ Widget-A built successfully with build:mfe-widget-a:prod"
+          elif npm run build:mfa-widget-a:prod; then
+            echo "✅ Widget-A built successfully with build:mfa-widget-a:prod"
           else
             echo "❌ Build failed with all attempted scripts"
-            exit 1
-          fi
-
+            echo "🔍 Full npm scripts list:"
+            npm run
+            echo "🔍 Package.json content:"
+            cat package.json | jq .scripts || cat package.json
       - name: 🚀 Deploy to Netlify
         uses: netlify/actions/cli@master
         with:
