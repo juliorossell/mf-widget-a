@@ -30,21 +30,30 @@ jobs:
     - name: 📦 Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: '22.12.0'
         cache: 'npm'
-
-
+    - name: 🔍 Verify Node.js version
+      run: |
+        echo "Node.js version: $(node --version)"
+        echo "npm version: $(npm --version)"
+        npm cache clean --force
     - name: �📚 Install Dependencies
       run: npm ci --legacy-peer-deps
 
-    - name: 🏗️ Build Widget-A for Production
-      run: |
-        npm run build:mfe-widget-a:prod
-        echo "✅ Widget-A built successfully"
+      # 🔥 Importante: usamos npx ng para evitar cualquier ng global raro
+      - name: 🏗️ Build Widget-A for Production
+        shell: bash
+        run: |
+          node -v
+          npx ng version
+          npm run build:mfe-widget-a:prod
+          echo "✅ Widget-A built successfully"
 
-    - name: 🔧 Configure CORS Headers
-      run: |
-        # Create _headers file for Netlify
+      - name: 🔧 Configure CORS Headers
+        shell: bash
+        run: |
+          echo "🔧 Configuring CORS headers..."
+          # Create _headers file for Netlify
         cat > dist/mfe-widget-a/browser/_headers << EOF
         /*
           Access-Control-Allow-Origin: *
@@ -78,31 +87,35 @@ jobs:
         NETLIFY_AUTH_TOKEN: ${{ env.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID }}
 
-    - name: 🔍 Validate Widget-A Deployment
-      run: |
-        echo "🔍 Validating Widget-A deployment..."
-        sleep 10
+      - name: 🔍 Validate Widget-A Deployment
+        shell: bash
+        run: |
+          echo "🔍 Validating Widget-A deployment..."
+          sleep 10
 
-        # Test remoteEntry.js
-        response=$(curl -s -o /dev/null -w "%{http_code}" https://fractalia-widget-a.netlify.app/remoteEntry.js)
-        if [ $response = "200" ]; then
-          echo "✅ Widget-A remoteEntry.js is accessible"
-        else
-          echo "❌ remoteEntry.js returned HTTP $response"
-          exit 1
-        fi
+          # Test remoteEntry.js
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://fractalia-widget-a.netlify.app/remoteEntry.js)
+          if [ "$response" = "200" ]; then
+            echo "✅ Widget-A remoteEntry.js is accessible"
+          else
+            echo "❌ remoteEntry.js returned HTTP $response"
+            exit 1
+          fi
 
-        # Test remoteEntry.json if exists
-        response=$(curl -s -o /dev/null -w "%{http_code}" https://fractalia-widget-a.netlify.app/remoteEntry.json)
-        if [ $response = "200" ]; then
-          echo "✅ Widget-A remoteEntry.json is accessible"
-        else
-          echo "⚠️ remoteEntry.json not found (may be normal)"
-        fi
+          # Test remoteEntry.json if exists
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://fractalia-widget-a.netlify.app/remoteEntry.json)
+          if [ "$response" = "200" ]; then
+            echo "✅ Widget-A remoteEntry.json is accessible"
+          else
+            echo "⚠️ remoteEntry.json not found (may be normal)"
+          fi
 
-    - name: 💬 Notify Success
-      if: success() && github.ref == 'refs/heads/main'
-      run: |
-        echo "🎉 Widget-A deployment completed successfully!"
-        echo "🔗 URL: https://fractalia-widget-a.netlify.app"
-        echo "📡 Remote Entry: https://fractalia-widget-a.netlify.app/remoteEntry.js"
+      - name: 💬 Notify Teams
+        if: success() && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          echo "🎉 Widget-A deployment completed successfully!"
+          echo "🔗 URL: https://fractalia-widget-a.netlify.app"
+          echo "📡 Remote Entry: https://fractalia-widget-a.netlify.app/remoteEntry.js"
+          echo "📱 Branch: ${{ github.ref_name }}"
+          echo "🔨 Commit: ${{ github.sha }}"
