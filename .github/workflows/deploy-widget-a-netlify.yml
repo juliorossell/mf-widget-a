@@ -8,37 +8,100 @@ on:
       - 'src/**'
       - 'public/**'
       - 'package.json'
+      - 'package-lock.json'
       - 'angular.json'
       - 'federation.config.js'
+      - '.github/workflows/deploy-widget-a-netlify.yml'
 
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '22.12.0'
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
   NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_WIDGET_A }}
+  # Si usas npm privado, agrega NPM_TOKEN en secrets (opcional)
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
   build-and-deploy:
     name: 🚀 Build and Deploy Widget-A
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - name: 📥 Checkout Code
-      uses: actions/checkout@v4
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
 
-    - name: 📦 Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22.12.0'
-        cache: 'npm'
-    - name: 🔍 Verify Node.js version
-      run: |
-        echo "Node.js version: $(node --version)"
-        echo "npm version: $(npm --version)"
-        npm cache clean --force
-    - name: �📚 Install Dependencies
-      run: npm ci --legacy-peer-deps
+      - name: 📦 Setup Node.js v22.12.0
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.12.0'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 🧪 Assert Node toolchain (hard fail if wrong)
+        shell: bash
+        run: |
+          echo "PATH=$PATH"
+          echo "node: $(which node)"
+          echo "npm:  $(which npm)"
+          node -v
+          npm -v
+          node -p "process.execPath"
+          if [[ "$(node -v)" != "v22.12.0" ]]; then
+            echo "❌ Node is not v22.12.0. Failing."
+            exit 1
+          fi
+
+      - name: 🛠️ Install build tools for native modules
+        shell: bash
+        run: |
+          echo "🛠️ Installing build essentials..."
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3
+          echo "✅ Build tools installed"
+
+      # ✅ Opcional: auth para npm privado (solo si realmente instalas paquetes desde registry npm privado)
+      - name: 🔐 Configure npm auth (optional)
+        if: env.NPM_TOKEN != ''
+        shell: bash
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          echo "legacy-peer-deps=true" >> ~/.npmrc
+          echo "auto-install-peers=true" >> ~/.npmrc
+          npm whoami || true
+
+      - name: 🧹 Clean installation for native modules
+        shell: bash
+        run: |
+          echo "🧹 Cleaning previous installations..."
+          rm -rf node_modules package-lock.json
+          npm cache clean --force
+          echo "✅ Clean completed"
+
+      - name: 📚 Install Dependencies (fresh)
+        shell: bash
+        env:
+          npm_config_platform: linux
+          npm_config_arch: x64
+          npm_config_python: python3
+        run: |
+          echo "📦 Installing dependencies for Linux x64..."
+          npm install --legacy-peer-deps --force
+          echo "🔧 Rebuilding native modules..."
+          npm rebuild
+          echo "✅ Installation completed"
+
+      - name: 🔍 Show build script (debug)
+        shell: bash
+        run: node -p "require('./package.json').scripts['build:mfe-widget-a:prod'] || require('./package.json').scripts['build:multirepo'] || 'No build script found'"
+
+      - name: 🔄 Use production federation config
+        shell: bash
+        run: |
+          if [ -f "federation.config.multirepo.js" ]; then
+            cp federation.config.multirepo.js federation.config.js
+            echo "✅ Production federation config applied"
+          else
+            echo "⚠️ federation.config.multirepo.js not found, using existing config"
+          fi
 
       # 🔥 Importante: usamos npx ng para evitar cualquier ng global raro
       - name: 🏗️ Build Widget-A for Production
@@ -46,47 +109,70 @@ jobs:
         run: |
           node -v
           npx ng version
-          npm run build:mfe-widget-a:prod
-          echo "✅ Widget-A built successfully"
+          # Try different build script names
+          if npm run build:mfe-widget-a:prod; then
+            echo "✅ Widget-A built successfully with build:mfe-widget-a:prod"
+          elif npm run build:multirepo; then
+            echo "✅ Widget-A built successfully with build:multirepo"
+          else
+            echo "❌ Build failed with all attempted scripts"
+            echo "📋 Available scripts:"
+            npm run
+            exit 1
+          fi
 
       - name: 🔧 Configure CORS Headers
         shell: bash
         run: |
           echo "🔧 Configuring CORS headers..."
-          # Create _headers file for Netlify
-        cat > dist/mfe-widget-a/browser/_headers << EOF
-        /*
-          Access-Control-Allow-Origin: *
-          Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
-          Access-Control-Allow-Headers: Content-Type, Authorization
-          X-Frame-Options: SAMEORIGIN
-          X-Content-Type-Options: nosniff
-          Referrer-Policy: strict-origin-when-cross-origin
+          # Check which directory was created by the build
+          BUILD_DIR=""
+          if [ -d "dist/mf-widget-a/browser" ]; then
+            BUILD_DIR="dist/mf-widget-a/browser"
+          elif [ -d "dist/mfe-widget-a/browser" ]; then
+            BUILD_DIR="dist/mfe-widget-a/browser"
+          else
+            echo "🔍 Checking available build directories:"
+            ls -la dist/ || true
+            echo "❌ Could not find build directory"
+            exit 1
+          fi
 
-        /remoteEntry.js
-          Cache-Control: no-cache
-          Access-Control-Allow-Origin: *
+          echo "✅ Using build directory: $BUILD_DIR"
 
-        /*.js
-          Cache-Control: public, max-age=31536000
-          Access-Control-Allow-Origin: *
-        EOF
-        echo "✅ CORS headers configured"
+          cat > "$BUILD_DIR/_headers" << 'EOF'
+          /*
+            Access-Control-Allow-Origin: *
+            Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+            Access-Control-Allow-Headers: Content-Type, Authorization
+            X-Frame-Options: SAMEORIGIN
+            X-Content-Type-Options: nosniff
+            Referrer-Policy: strict-origin-when-cross-origin
 
-    - name: 🚀 Deploy to Netlify
-      id: netlify-deploy
-      uses: nwtgck/actions-netlify@v2.0
-      with:
-        publish-dir: './dist/mfe-widget-a/browser'
-        production-branch: main
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-message: "Deploy Widget-A from GitHub Actions - ${{ github.sha }}"
-        enable-pull-request-comment: true
-        enable-commit-comment: true
-        overwrites-pull-request-comment: true
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ env.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID }}
+          /remoteEntry.js
+            Cache-Control: no-cache
+            Access-Control-Allow-Origin: *
+
+          /*.js
+            Cache-Control: public, max-age=31536000
+            Access-Control-Allow-Origin: *
+          EOF
+          echo "✅ CORS headers configured in $BUILD_DIR"
+
+      - name: 🚀 Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v2.0
+        with:
+          publish-dir: './dist/mfe-widget-a/browser'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy Widget-A from GitHub Actions - ${{ github.sha }}"
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ env.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID }}
 
       - name: 🔍 Validate Widget-A Deployment
         shell: bash
@@ -102,10 +188,10 @@ jobs:
           # Check if remoteEntry.js is accessible with retries
           max_retries=5
           retry_count=0
-          
+
           while [ $retry_count -lt $max_retries ]; do
             response=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL/remoteEntry.js" || echo "000")
-            
+
             if [ "$response" = "200" ]; then
               echo "✅ Widget-A remoteEntry.js is accessible"
               break
@@ -115,13 +201,13 @@ jobs:
               retry_count=$((retry_count + 1))
             fi
           done
-          
+
           if [ $retry_count -eq $max_retries ]; then
             echo "❌ Widget-A remoteEntry.js failed to respond after $max_retries attempts"
             echo "🔍 Let's check what's actually deployed..."
             curl -v "$DEPLOY_URL/remoteEntry.js" 2>&1 || true
             echo "🔍 Build directory structure:"
-            ls -la dist/mfe-widget-a/browser/ || true
+            ls -la dist/mfe-widget-a/browser/ || ls -la dist/mf-widget-a/browser/ || ls -la dist/ || true
             exit 1
           fi
 
@@ -132,6 +218,18 @@ jobs:
           else
             echo "⚠️ remoteEntry.json returned HTTP $response (this may be normal for this setup)"
           fi
+
+      - name: 💬 Comment on PR (if PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Widget A deployed successfully to Netlify!\\n🔗 URL: ${{ steps.netlify-deploy.outputs.deploy-url || \"https://fractalia-widget-a.netlify.app\" }}\\n📡 Remote Entry: ${{ steps.netlify-deploy.outputs.deploy-url || \"https://fractalia-widget-a.netlify.app\" }}/remoteEntry.js'
+            })
 
       - name: 💬 Notify Teams
         if: success() && github.ref == 'refs/heads/main'

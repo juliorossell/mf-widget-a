@@ -1,55 +1,121 @@
-name: Deploy Widget A to Netlify
+name: 🎛️ Deploy Widget-A (Alternative)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+  NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_WIDGET_A }}
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18.17.0'
-        cache: 'npm'
+      - name: 📦 Setup Node.js v22.12.0
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.12.0'
+          registry-url: 'https://registry.npmjs.org'
 
-    - name: Setup npm token
-      run: |
-        echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-        echo "legacy-peer-deps=true" >> ~/.npmrc
-        echo "auto-install-peers=true" >> ~/.npmrc
+      - name: 🧪 Assert Node toolchain (hard fail if wrong)
+        shell: bash
+        run: |
+          echo "PATH=$PATH"
+          echo "node: $(which node)"
+          echo "npm:  $(which npm)"
+          node -v
+          npm -v
+          if [[ "$(node -v)" != "v22.12.0" ]]; then
+            echo "❌ Node is not v22.12.0. Failing."
+            exit 1
+          fi
 
-    - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      - name: 🛠️ Install build tools for native modules
+        shell: bash
+        run: |
+          echo "🛠️ Installing build essentials..."
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3
+          echo "✅ Build tools installed"
 
-    - name: Use production federation config
-      run: cp federation.config.multirepo.js federation.config.js
+      - name: 🔐 Setup npm token
+        shell: bash
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "legacy-peer-deps=true" >> ~/.npmrc
+          echo "auto-install-peers=true" >> ~/.npmrc
+          npm whoami || true
 
-    - name: Build project
-      run: npm run build:multirepo
+      - name: 🧹 Clean installation for native modules
+        shell: bash
+        run: |
+          echo "🧹 Cleaning previous installations..."
+          rm -rf node_modules package-lock.json
+          npm cache clean --force
+          echo "✅ Clean completed"
 
-    - name: Deploy to Netlify
-      uses: netlify/actions/cli@master
-      with:
-        args: deploy --prod --dir=dist/mf-widget-a/browser --site=${{ secrets.NETLIFY_SITE_ID_WIDGET_A }}
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      - name: 📚 Install Dependencies
+        shell: bash
+        env:
+          npm_config_platform: linux
+          npm_config_arch: x64
+          npm_config_python: python3
+        run: |
+          echo "📦 Installing dependencies for Linux x64..."
+          npm install --legacy-peer-deps
+          echo "🔧 Rebuilding native modules..."
+          npm rebuild
+          echo "✅ Installation completed"
 
-    - name: Comment on PR (if PR)
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '🚀 Widget A deployed successfully to Netlify!'
-          })
+      - name: 🔄 Use production federation config
+        shell: bash
+        run: |
+          if [ -f "federation.config.multirepo.js" ]; then
+            cp federation.config.multirepo.js federation.config.js
+            echo "✅ Production federation config applied"
+          else
+            echo "⚠️ federation.config.multirepo.js not found, using existing config"
+          fi
+
+      - name: 🏗️ Build project
+        shell: bash
+        run: |
+          echo "🔍 Available scripts:"
+          npm run 2>&1 | grep -E "build:" || true
+
+          if npm run build:multirepo; then
+            echo "✅ Widget-A built successfully with build:multirepo"
+          elif npm run build:mfe-widget-a:prod; then
+            echo "✅ Widget-A built successfully with build:mfe-widget-a:prod"
+          else
+            echo "❌ Build failed with all attempted scripts"
+            exit 1
+          fi
+
+      - name: 🚀 Deploy to Netlify
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --prod --dir=dist/mf-widget-a/browser --site=${{ secrets.NETLIFY_SITE_ID_WIDGET_A }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
+      - name: 💬 Comment on PR (if PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Widget A deployed successfully to Netlify!\\n🔗 URL: https://fractalia-widget-a.netlify.app\\n📡 Remote Entry: https://fractalia-widget-a.netlify.app/remoteEntry.js'
+            })
