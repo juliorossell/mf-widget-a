@@ -91,35 +91,81 @@ jobs:
             echo "⚠️ federation.config.multirepo.js not found, using existing config"
           fi
 
-      - name: 🏗️ Build project
+      - name: 🔧 Fix TypeScript Configuration Issues
         shell: bash
         run: |
-          echo "🔍 Current working directory:"
+          echo "🔍 Checking TypeScript configuration files..."
+          
+          # Verify tsconfig.json exists in root
+          if [ ! -f "tsconfig.json" ]; then
+            echo "❌ tsconfig.json not found in root, checking if exists elsewhere..."
+            find . -name "tsconfig.json" -type f | head -5
+          else
+            echo "✅ tsconfig.json found in root"
+          fi
+          
+          # Check tsconfig content for moduleResolution
+          if [ -f "tsconfig.json" ]; then
+            echo "🔍 Current tsconfig.json content:"
+            cat tsconfig.json | head -20
+          fi
+          
+          # Verify node_modules structure
+          echo "🔍 Checking Angular modules installation:"
+          ls -la node_modules/@angular/ 2>/dev/null | head -5 || echo "⚠️ @angular modules not found in node_modules"
+          ls -la node_modules/rxjs/ 2>/dev/null | head -3 || echo "⚠️ rxjs not found in node_modules"
+          
+          # Check if native-federation is properly installed
+          ls -la node_modules/@angular-architects/ 2>/dev/null || echo "⚠️ @angular-architects not found"
+          
+          # Verify that TypeScript can resolve modules
+          echo "🔍 Testing TypeScript module resolution:"
+          npx tsc --showConfig | head -10 || echo "⚠️ TypeScript config test failed"
+
+      - name: 🏗️ Build Widget-A for Production
+        shell: bash
+        run: |
+          echo "🔍 Pre-build verification:"
           pwd
           
-          echo "🔍 Available files in root:"
+          echo "🔍 Working directory contents:"
           ls -la
           
-          echo "🔍 Available scripts:"
-          npm run 2>&1 | grep -E "build:" || true
+          echo "🔍 Angular CLI version:"
+          npx ng version || echo "⚠️ Angular CLI not working properly"
           
-          echo "🔍 Checking TypeScript config files:"
-          ls -la *.json || echo "No .json files found in root"
+          echo "🔍 TypeScript version:"
+          npx tsc --version || echo "⚠️ TypeScript not working"
           
-          echo "🔍 Node modules check:"
-          ls -la node_modules/@angular/ | head -10 || echo "Angular modules not found"
+          echo "🔍 Node and npm versions:"
+          node -v
+          npm -v
+          
+          echo "🔍 Checking critical files:"
+          [ -f "angular.json" ] && echo "✅ angular.json found" || echo "❌ angular.json missing"
+          [ -f "tsconfig.json" ] && echo "✅ tsconfig.json found" || echo "❌ tsconfig.json missing"
+          [ -f "package.json" ] && echo "✅ package.json found" || echo "❌ package.json missing"
           
           echo "🏗️ Starting build process..."
-          if npm run build:multirepo; then
-            echo "✅ Widget-A built successfully with build:multirepo"
-          elif npm run build:mfa-widget-a:prod; then
+          # Set NODE_OPTIONS to increase memory and handle potential issues
+          export NODE_OPTIONS="--max-old-space-size=8192"
+          
+          # Try different build script names with better error handling
+          if npm run build:mfa-widget-a:prod 2>&1; then
             echo "✅ Widget-A built successfully with build:mfa-widget-a:prod"
+          elif npm run build:multirepo 2>&1; then
+            echo "✅ Widget-A built successfully with build:multirepo"
           else
             echo "❌ Build failed with all attempted scripts"
-            echo "🔍 Full npm scripts list:"
-            npm run
-            echo "🔍 Package.json content:"
-            cat package.json | jq .scripts || cat package.json
+            echo "🔍 Detailed error investigation:"
+            echo "📋 Available scripts:"
+            npm run 2>&1
+            echo "🔍 Angular projects:"
+            npx ng generate --help 2>&1 | grep -A 20 "Available schematics" || true
+            echo "🔍 TypeScript compilation test:"
+            npx tsc --noEmit 2>&1 | head -20 || true
+            exit 1
+          fi
       - name: 🚀 Deploy to Netlify
         uses: netlify/actions/cli@master
         with:
