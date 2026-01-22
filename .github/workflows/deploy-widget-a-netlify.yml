@@ -58,7 +58,7 @@ jobs:
           sudo apt-get install -y build-essential python3
           echo "✅ Build tools installed"
 
-      # ✅ Opcional: auth para npm privado (solo si realmente instalas paquetes desde registry npm privado)
+      # ✅ Opcional: auth para npm privado
       - name: 🔐 Configure npm auth (optional)
         if: env.NPM_TOKEN != ''
         shell: bash
@@ -91,7 +91,7 @@ jobs:
 
       - name: 🔍 Show build script (debug)
         shell: bash
-        run: node -p "require('./package.json').scripts['build:mfa-widget-a:prod'] || require('./package.json').scripts['build:multirepo'] || 'No build script found'"
+        run: node -p "require('./package.json').scripts['build:mfe-widget-a:prod']"
 
       - name: 🔄 Use production federation config
         shell: bash
@@ -103,44 +103,19 @@ jobs:
             echo "⚠️ federation.config.multirepo.js not found, using existing config"
           fi
 
-      # 🔥 Importante: usamos npx ng para evitar cualquier ng global raro
       - name: 🏗️ Build Widget-A for Production
         shell: bash
         run: |
           node -v
           npx ng version
-          # Try different build script names
-          if npm run build:mfa-widget-a:prod; then
-            echo "✅ Widget-A built successfully with build:mfa-widget-a:prod"
-          elif npm run build:multirepo; then
-            echo "✅ Widget-A built successfully with build:multirepo"
-          else
-            echo "❌ Build failed with all attempted scripts"
-            echo "📋 Available scripts:"
-            npm run
-            exit 1
-          fi
+          npm run build:mfe-widget-a:prod
+          echo "✅ Widget-A built successfully"
 
       - name: 🔧 Configure CORS Headers
         shell: bash
         run: |
           echo "🔧 Configuring CORS headers..."
-          # Check which directory was created by the build
-          BUILD_DIR=""
-          if [ -d "dist/mf-widget-a/browser" ]; then
-            BUILD_DIR="dist/mf-widget-a/browser"
-          elif [ -d "dist/mfe-widget-a/browser" ]; then
-            BUILD_DIR="dist/mfe-widget-a/browser"
-          else
-            echo "🔍 Checking available build directories:"
-            ls -la dist/ || true
-            echo "❌ Could not find build directory"
-            exit 1
-          fi
-
-          echo "✅ Using build directory: $BUILD_DIR"
-
-          cat > "$BUILD_DIR/_headers" << 'EOF'
+          cat > dist/mfe-widget-a/browser/_headers << 'EOF'
           /*
             Access-Control-Allow-Origin: *
             Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
@@ -157,7 +132,7 @@ jobs:
             Cache-Control: public, max-age=31536000
             Access-Control-Allow-Origin: *
           EOF
-          echo "✅ CORS headers configured in $BUILD_DIR"
+          echo "✅ CORS headers configured"
 
       - name: 🚀 Deploy to Netlify
         id: netlify-deploy
@@ -174,6 +149,18 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ env.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID }}
 
+      - name: 🧷 Resolve Deploy URL (fallback)
+        id: resolve-url
+        shell: bash
+        run: |
+          DEFAULT_URL="https://fractalia-widget-a.netlify.app"
+          OUT="${{ steps.netlify-deploy.outputs.deploy-url }}"
+          if [ -n "$OUT" ]; then
+            echo "deploy_url=$OUT" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_url=$DEFAULT_URL" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 🔍 Validate Widget-A Deployment
         shell: bash
         run: |
@@ -181,11 +168,9 @@ jobs:
           echo "⏳ Waiting for deployment to be ready..."
           sleep 30
 
-          # Get the deployed URL from Netlify output or use default
-          DEPLOY_URL="${{ steps.netlify-deploy.outputs.deploy-url || 'https://fractalia-widget-a.netlify.app' }}"
+          DEPLOY_URL="${{ steps.resolve-url.outputs.deploy_url }}"
           echo "🔗 Testing deployment at: $DEPLOY_URL"
 
-          # Check if remoteEntry.js is accessible with retries
           max_retries=5
           retry_count=0
 
@@ -207,36 +192,31 @@ jobs:
             echo "🔍 Let's check what's actually deployed..."
             curl -v "$DEPLOY_URL/remoteEntry.js" 2>&1 || true
             echo "🔍 Build directory structure:"
-            ls -la dist/mfe-widget-a/browser/ || ls -la dist/mf-widget-a/browser/ || ls -la dist/ || true
+            ls -la dist/mfe-widget-a/browser/ || true
             exit 1
-          fi
-
-          # Test remoteEntry.json if exists (optional)
-          response=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL/remoteEntry.json")
-          if [ "$response" = "200" ]; then
-            echo "✅ Widget-A remoteEntry.json is also accessible"
-          else
-            echo "⚠️ remoteEntry.json returned HTTP $response (this may be normal for this setup)"
           fi
 
       - name: 💬 Comment on PR (if PR)
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+        env:
+          DEPLOY_URL: ${{ steps.resolve-url.outputs.deploy_url }}
         with:
           script: |
-            github.rest.issues.createComment({
+            const url = process.env.DEPLOY_URL;
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🚀 Widget A deployed successfully to Netlify!\\n🔗 URL: ${{ steps.netlify-deploy.outputs.deploy-url || \"https://fractalia-widget-a.netlify.app\" }}\\n📡 Remote Entry: ${{ steps.netlify-deploy.outputs.deploy-url || \"https://fractalia-widget-a.netlify.app\" }}/remoteEntry.js'
-            })
+              body: `🚀 Widget A deployed successfully to Netlify!\n🔗 URL: ${url}\n📡 Remote Entry: ${url}/remoteEntry.js`
+            });
 
       - name: 💬 Notify Teams
         if: success() && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           echo "🎉 Widget-A deployment completed successfully!"
-          echo "🔗 URL: https://fractalia-widget-a.netlify.app"
-          echo "📡 Remote Entry: https://fractalia-widget-a.netlify.app/remoteEntry.js"
+          echo "🔗 URL: ${{ steps.resolve-url.outputs.deploy_url }}"
+          echo "📡 Remote Entry: ${{ steps.resolve-url.outputs.deploy_url }}/remoteEntry.js"
           echo "📱 Branch: ${{ github.ref_name }}"
           echo "🔨 Commit: ${{ github.sha }}"
